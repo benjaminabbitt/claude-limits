@@ -161,5 +161,11 @@ func printJSON(usage *models.Usage) error {
 
 func printTable(usage *models.Usage) error {
 	colors := format.NewColors(NoColor())
-	return format.Table(usage, colors)
+	fmts := GetFormats()
+	formats := format.Formats{
+		Datetime: fmts.Datetime,
+		Date:     fmts.Date,
+		Time:     fmts.Time,
+	}
+	return format.Table(usage, colors, formats)
 }

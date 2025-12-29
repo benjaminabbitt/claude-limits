@@ -33,6 +33,12 @@ YELLOW='\033[33m'
 GREEN='\033[32m'
 RESET='\033[0m'
 
+# Time format (strftime syntax, default to 12-hour format)
+# Use "+%H:%M" for 24-hour, "+%I:%M %p" for 12-hour with AM/PM
+TIME_FORMAT="${CLAUDE_LIMITS_TIME_FORMAT:-+%I:%M %p}"
+# Date+time format for weekly reset (includes day)
+DATETIME_FORMAT="${CLAUDE_LIMITS_DATETIME_FORMAT:-+%a %I:%M %p}"
+
 # Colorize a percentage value based on thresholds
 colorize() {
     local value="$1"
@@ -51,6 +57,33 @@ colorize() {
     fi
 }
 
+# Format an ISO timestamp to local time
+format_time() {
+    local iso_time="$1"
+    local format="$2"
+
+    if [[ -z "$iso_time" || "$iso_time" == "?" ]]; then
+        echo "?"
+        return
+    fi
+
+    # Try GNU date first (Linux), then BSD date (macOS)
+    if date --version >/dev/null 2>&1; then
+        # GNU date
+        date -d "$iso_time" "$format" 2>/dev/null || echo "?"
+    else
+        # BSD date (macOS) - convert ISO 8601 to epoch then format
+        local epoch
+        epoch=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" "${iso_time//Z/+0000}" '+%s' 2>/dev/null) ||
+        epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso_time" '+%s' 2>/dev/null)
+        if [[ -n "$epoch" ]]; then
+            date -j -f '%s' "$epoch" "$format" 2>/dev/null || echo "?"
+        else
+            echo "?"
+        fi
+    fi
+}
+
 # Find claude-limits binary
 CLAUDE_LIMITS="${CLAUDE_LIMITS_PATH:-$(command -v claude-limits 2>/dev/null)}"
 if [[ -z "$CLAUDE_LIMITS" ]]; then
@@ -58,35 +91,22 @@ if [[ -z "$CLAUDE_LIMITS" ]]; then
     exit 1
 fi
 
-# Get utilization values and reset time (using specific queries to avoid ambiguity)
+# Get utilization values and reset times (using specific queries to avoid ambiguity)
 FIVE_HOUR=$($CLAUDE_LIMITS five_hour_utilization 2>/dev/null)
 WEEKLY=$($CLAUDE_LIMITS seven_day_utilization 2>/dev/null)
 # Use context from stdin if available, otherwise try claude-limits
 CONTEXT="${STDIN_CONTEXT:-$($CLAUDE_LIMITS context_utilization 2>/dev/null)}"
-RESET_TIME=$($CLAUDE_LIMITS five_hour_reset 2>/dev/null)
+FIVE_HOUR_RESET=$($CLAUDE_LIMITS five_hour_reset 2>/dev/null)
+WEEKLY_RESET=$($CLAUDE_LIMITS seven_day_reset 2>/dev/null)
 
 # Default to "?" if not available
 FIVE_HOUR=${FIVE_HOUR:-"?"}
 WEEKLY=${WEEKLY:-"?"}
 CONTEXT=${CONTEXT:-"?"}
 
-# Parse and localize reset time
-RESET_LOCAL="?"
-if [[ -n "$RESET_TIME" && "$RESET_TIME" != "?" ]]; then
-    # Try GNU date first (Linux), then BSD date (macOS)
-    if date --version >/dev/null 2>&1; then
-        # GNU date
-        RESET_LOCAL=$(date -d "$RESET_TIME" '+%H:%M' 2>/dev/null) || RESET_LOCAL="?"
-    else
-        # BSD date (macOS) - convert ISO 8601 to epoch then format
-        # Handle both "Z" and "+00:00" timezone formats
-        EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" "${RESET_TIME//Z/+0000}" '+%s' 2>/dev/null) ||
-        EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$RESET_TIME" '+%s' 2>/dev/null)
-        if [[ -n "$EPOCH" ]]; then
-            RESET_LOCAL=$(date -j -f '%s' "$EPOCH" '+%H:%M' 2>/dev/null) || RESET_LOCAL="?"
-        fi
-    fi
-fi
+# Format reset times
+FIVE_HOUR_RESET_LOCAL=$(format_time "$FIVE_HOUR_RESET" "$TIME_FORMAT")
+WEEKLY_RESET_LOCAL=$(format_time "$WEEKLY_RESET" "$DATETIME_FORMAT")
 
 # Colorize values
 FIVE_HOUR_C=$(colorize "$FIVE_HOUR")
@@ -94,4 +114,4 @@ WEEKLY_C=$(colorize "$WEEKLY")
 CONTEXT_C=$(colorize "$CONTEXT")
 
 # Output the status line
-echo -e "5h: ${FIVE_HOUR_C}% @ ${RESET_LOCAL} | wk: ${WEEKLY_C}% | ctx: ${CONTEXT_C}%"
+echo -e "5h: ${FIVE_HOUR_C}% @ ${FIVE_HOUR_RESET_LOCAL} | wk: ${WEEKLY_C}% @ ${WEEKLY_RESET_LOCAL} | ctx: ${CONTEXT_C}%"

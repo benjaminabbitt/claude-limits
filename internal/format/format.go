@@ -32,6 +32,22 @@ type Colors struct {
 	Reset  string
 }
 
+// Formats holds the configurable date/time format strings
+type Formats struct {
+	Datetime string // Format for full datetime (e.g., "Mon, Jan 2 2006 at 3:04 PM MST")
+	Date     string // Format for date only (e.g., "Mon, Jan 2 2006")
+	Time     string // Format for time only (e.g., "3:04 PM")
+}
+
+// DefaultFormats returns the default format configuration
+func DefaultFormats() Formats {
+	return Formats{
+		Datetime: "Mon, Jan 2 2006 at 3:04 PM MST",
+		Date:     "Mon, Jan 2 2006",
+		Time:     "3:04 PM",
+	}
+}
+
 // NewColors creates a Colors configuration based on terminal and user preferences
 func NewColors(noColor bool) Colors {
 	if !IsTerminal() || noColor {
@@ -62,7 +78,7 @@ func JSON(usage *models.Usage) (string, error) {
 }
 
 // Table formats usage data as a human-readable table
-func Table(usage *models.Usage, colors Colors) error {
+func Table(usage *models.Usage, colors Colors, formats Formats) error {
 	var data map[string]interface{}
 	if err := json.Unmarshal(usage.Raw, &data); err != nil {
 		// Fall back to JSON output on parse error
@@ -78,13 +94,13 @@ func Table(usage *models.Usage, colors Colors) error {
 	fmt.Printf("%s%sClaude.ai Usage%s\n", colors.Bold, colors.Cyan, colors.Reset)
 	fmt.Println(strings.Repeat("═", 50))
 
-	printDataRecursive(data, "", colors)
+	printDataRecursive(data, "", colors, formats)
 
 	fmt.Println()
 	return nil
 }
 
-func printDataRecursive(data map[string]interface{}, indent string, colors Colors) {
+func printDataRecursive(data map[string]interface{}, indent string, colors Colors, formats Formats) {
 	// Sort keys for deterministic output
 	keys := make([]string, 0, len(data))
 	for k := range data {
@@ -99,13 +115,13 @@ func printDataRecursive(data map[string]interface{}, indent string, colors Color
 		switch v := value.(type) {
 		case map[string]interface{}:
 			fmt.Printf("%s%s%s:%s\n", indent, colors.Bold, displayKey, colors.Reset)
-			printDataRecursive(v, indent+"  ", colors)
+			printDataRecursive(v, indent+"  ", colors, formats)
 		case []interface{}:
 			fmt.Printf("%s%s%s:%s\n", indent, colors.Bold, displayKey, colors.Reset)
 			for i, item := range v {
 				if m, ok := item.(map[string]interface{}); ok {
 					fmt.Printf("%s  %s[%d]%s\n", indent, colors.Cyan, i+1, colors.Reset)
-					printDataRecursive(m, indent+"    ", colors)
+					printDataRecursive(m, indent+"    ", colors, formats)
 				} else {
 					fmt.Printf("%s  • %v\n", indent, item)
 				}
@@ -117,7 +133,7 @@ func printDataRecursive(data map[string]interface{}, indent string, colors Color
 			if v == "" {
 				continue // Skip empty strings
 			}
-			formatted := FormatString(v, key)
+			formatted := FormatStringWithFormats(v, key, formats)
 			fmt.Printf("%s%-22s %s\n", indent, displayKey+":", formatted)
 		case bool:
 			fmt.Printf("%s%-22s %t\n", indent, displayKey+":", v)
@@ -175,13 +191,19 @@ func GetUtilizationColor(value float64, colors Colors) string {
 	}
 }
 
-// FormatString formats a string value, converting ISO datetimes to local format
+// FormatString formats a string value, converting ISO datetimes to local format.
+// Uses default format settings.
 func FormatString(v, key string) string {
+	return FormatStringWithFormats(v, key, DefaultFormats())
+}
+
+// FormatStringWithFormats formats a string value using the provided format settings.
+func FormatStringWithFormats(v, key string, fmts Formats) string {
 	if !isDatetimeField(key) {
 		return v
 	}
 
-	formats := []string{
+	inputFormats := []string{
 		time.RFC3339,
 		time.RFC3339Nano,
 		"2006-01-02T15:04:05Z07:00",
@@ -189,13 +211,13 @@ func FormatString(v, key string) string {
 		"2006-01-02",
 	}
 
-	for _, format := range formats {
-		if t, err := time.Parse(format, v); err == nil {
+	for _, inputFmt := range inputFormats {
+		if t, err := time.Parse(inputFmt, v); err == nil {
 			local := t.Local()
-			if format == "2006-01-02" {
-				return local.Format("Mon, Jan 2 2006")
+			if inputFmt == "2006-01-02" {
+				return local.Format(fmts.Date)
 			}
-			return local.Format("Mon, Jan 2 2006 at 3:04 PM MST")
+			return local.Format(fmts.Datetime)
 		}
 	}
 

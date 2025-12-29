@@ -6,6 +6,7 @@ require (
 	github.com/browserutils/kooky v0.2.4
 	github.com/mark3labs/mcp-go v0.28.0
 	github.com/spf13/cobra v1.8.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -30,6 +30,12 @@ $YELLOW = "`e[33m"
 $GREEN = "`e[32m"
 $RESET = "`e[0m"
 
+# Time format (.NET format strings, default to 12-hour format)
+# Use "HH:mm" for 24-hour, "h:mm tt" for 12-hour with AM/PM
+$TIME_FORMAT = if ($env:CLAUDE_LIMITS_TIME_FORMAT) { $env:CLAUDE_LIMITS_TIME_FORMAT } else { "h:mm tt" }
+# Date+time format for weekly reset (includes day)
+$DATETIME_FORMAT = if ($env:CLAUDE_LIMITS_DATETIME_FORMAT) { $env:CLAUDE_LIMITS_DATETIME_FORMAT } else { "ddd h:mm tt" }
+
 # Colorize a percentage value based on thresholds
 function Colorize {
     param([string]$Value)
@@ -46,6 +52,23 @@ function Colorize {
     }
 }
 
+# Format an ISO timestamp to local time
+function Format-Time {
+    param(
+        [string]$IsoTime,
+        [string]$Format
+    )
+    if (-not $IsoTime -or $IsoTime -eq "?") {
+        return "?"
+    }
+    try {
+        $dt = [DateTime]::Parse($IsoTime)
+        return $dt.ToLocalTime().ToString($Format)
+    } catch {
+        return "?"
+    }
+}
+
 # Find claude-limits binary
 $CLAUDE_LIMITS = if ($env:CLAUDE_LIMITS_PATH) {
     $env:CLAUDE_LIMITS_PATH
@@ -58,7 +81,7 @@ if (-not $CLAUDE_LIMITS) {
     exit 1
 }
 
-# Get utilization values and reset time (using specific queries to avoid ambiguity)
+# Get utilization values and reset times (using specific queries to avoid ambiguity)
 try {
     $FIVE_HOUR = & $CLAUDE_LIMITS five_hour_utilization 2>$null
 } catch {
@@ -82,9 +105,15 @@ if (-not $CONTEXT) {
 }
 
 try {
-    $RESET_TIME = & $CLAUDE_LIMITS five_hour_reset 2>$null
+    $FIVE_HOUR_RESET = & $CLAUDE_LIMITS five_hour_reset 2>$null
 } catch {
-    $RESET_TIME = $null
+    $FIVE_HOUR_RESET = $null
+}
+
+try {
+    $WEEKLY_RESET = & $CLAUDE_LIMITS seven_day_reset 2>$null
+} catch {
+    $WEEKLY_RESET = $null
 }
 
 # Default to "?" if not available
@@ -92,16 +121,9 @@ if (-not $FIVE_HOUR) { $FIVE_HOUR = "?" }
 if (-not $WEEKLY) { $WEEKLY = "?" }
 if (-not $CONTEXT) { $CONTEXT = "?" }
 
-# Parse and localize reset time
-$RESET_LOCAL = "?"
-if ($RESET_TIME -and $RESET_TIME -ne "?") {
-    try {
-        $dt = [DateTime]::Parse($RESET_TIME)
-        $RESET_LOCAL = $dt.ToLocalTime().ToString("HH:mm")
-    } catch {
-        $RESET_LOCAL = "?"
-    }
-}
+# Format reset times
+$FIVE_HOUR_RESET_LOCAL = Format-Time -IsoTime $FIVE_HOUR_RESET -Format $TIME_FORMAT
+$WEEKLY_RESET_LOCAL = Format-Time -IsoTime $WEEKLY_RESET -Format $DATETIME_FORMAT
 
 # Colorize values
 $FIVE_HOUR_C = Colorize $FIVE_HOUR
@@ -109,4 +131,4 @@ $WEEKLY_C = Colorize $WEEKLY
 $CONTEXT_C = Colorize $CONTEXT
 
 # Output the status line
-Write-Output "5h: ${FIVE_HOUR_C}% @ ${RESET_LOCAL} | wk: ${WEEKLY_C}% | ctx: ${CONTEXT_C}%"
+Write-Output "5h: ${FIVE_HOUR_C}% @ ${FIVE_HOUR_RESET_LOCAL} | wk: ${WEEKLY_C}% @ ${WEEKLY_RESET_LOCAL} | ctx: ${CONTEXT_C}%"
