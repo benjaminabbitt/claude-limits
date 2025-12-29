@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "claude-limits": {
+      "command": "go",
+      "args": ["run", "./cmd/claude-limits", "serve"],
+      "cwd": "/home/babbitt/workspace/ClaudeLimits"
+    }
+  }
+}

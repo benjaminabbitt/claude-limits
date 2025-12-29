@@ -1,0 +1,116 @@
+# ┌─────────────────────────────────────────────────────────────────────────────┐
+# │ DO NOT EDIT - Changes will be overwritten on next 'scm copy'              │
+# │ To customize: scm fragment edit {{name}} then re-run 'scm copy'          │
+# └─────────────────────────────────────────────────────────────────────────────┘
+version: 1.0
+tags:
+    - review
+    - profile
+    - performance
+    - algorithms
+content: |-
+    # Performance & Algorithms Review
+
+    Review code as a computer scientist focused on efficiency, data structures, and algorithmic complexity.
+
+    ## Algorithmic Complexity
+
+    - What is the time complexity (Big-O)?
+    - What is the space complexity?
+    - Are there hidden O(n) operations inside loops?
+    - Could a different algorithm reduce complexity class?
+
+    ## Data Structure Selection
+
+    - Is this the right data structure for the access patterns?
+    - Hash map vs tree map: is ordering needed?
+    - Array vs linked list: random access or sequential?
+    - Set vs list: are duplicates needed?
+    - Priority queue, heap, or sorted structure: which fits?
+
+    ## Memory Efficiency
+
+    - Are allocations minimized in hot paths?
+    - Is memory being copied unnecessarily?
+    - Could data be streamed instead of loaded entirely?
+    - Are large objects passed by reference?
+
+    ## Caching & Memoization
+
+    - Are repeated expensive computations cached?
+    - Is cache invalidation handled correctly?
+    - Could memoization reduce redundant work?
+    - Are cache sizes bounded to prevent memory issues?
+
+    ## I/O & Network
+
+    - Are I/O operations batched where possible?
+    - Is pagination used for large data sets?
+    - Are network round-trips minimized?
+    - Is async I/O used where appropriate?
+
+    ## Loop Optimization
+
+    - Can work be moved outside the loop?
+    - Are loop-invariant calculations hoisted?
+    - Is early termination used when possible?
+    - Could the loop be parallelized?
+
+    ## Profiling Considerations
+
+    - Has this code path been profiled?
+    - Where are the actual bottlenecks?
+    - Are micro-optimizations justified by measurement?
+    - Is premature optimization being avoided?
+content_hash: sha256:a19a8038750c291a6a4700c7cb547e019878d1143fd178292e966a5049d90c3e
+distilled: |-
+    Here's the compressed version:
+
+    ```markdown
+    # Performance & Algorithms Review
+
+    CS-focused review: efficiency, data structures, algorithmic complexity.
+
+    ## Complexity
+    - Time/space Big-O?
+    - Hidden O(n) in loops?
+    - Better algorithm possible?
+
+    ## Data Structures
+    - Right structure for access patterns?
+    - HashMap vs TreeMap (ordering needed?)
+    - Array vs LinkedList (random vs sequential?)
+    - Set vs List (duplicates?)
+    - PriorityQueue/heap/sorted: which fits?
+
+    ## Memory
+    - Allocations minimized in hot paths?
+    - Unnecessary copies?
+    - Stream vs load entirely?
+    - Large objects by reference?
+
+    ## Caching
+    - Expensive computations cached?
+    - Invalidation correct?
+    - Memoization opportunities?
+    - Cache sizes bounded?
+
+    ## I/O & Network
+    - Batched I/O?
+    - Pagination for large datasets?
+    - Round-trips minimized?
+    - Async where appropriate?
+
+    ## Loops
+    - Work movable outside?
+    - Invariants hoisted?
+    - Early termination?
+    - Parallelizable?
+
+    ## Profiling
+    - Profiled?
+    - Actual bottlenecks identified?
+    - Micro-optimizations justified?
+    - Premature optimization avoided?
+    ```
+distilled_by: claude-code

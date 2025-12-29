@@ -1,0 +1,77 @@
+version: 2
+
+project_name: claude-limits
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: claude-limits
+    main: ./cmd/claude-limits
+    binary: claude-limits
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X github.com/benjaminabbitt/claude-limits/internal/version.Version={{.Version}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE*
+      - README*
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+brews:
+  - name: claude-limits
+    repository:
+      owner: benjaminabbitt
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/benjaminabbitt/claude-limits"
+    description: "CLI tool to check Claude.ai usage limits for Pro/Max subscriptions"
+    license: "MIT"
+    install: |
+      bin.install "claude-limits"
+    test: |
+      system "#{bin}/claude-limits", "--help"
+
+release:
+  github:
+    owner: benjaminabbitt
+    name: claude-limits
+  draft: false
+  prerelease: auto
+  name_template: "v{{.Version}}"

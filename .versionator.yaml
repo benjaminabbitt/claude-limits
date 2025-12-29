@@ -1,0 +1,16 @@
+# Versionator Configuration
+prefix: ""
+prerelease:
+    elements:
+        - "0"
+        - BuildDateTimeCompact
+        - ShortHash
+metadata:
+    elements:
+        - BuildDateTimeCompact
+        - ShortHash
+        - Dirty
+    git:
+        hashLength: 12
+logging:
+    output: console
