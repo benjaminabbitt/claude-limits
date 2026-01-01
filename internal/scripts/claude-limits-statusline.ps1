@@ -14,9 +14,10 @@ if ($InputText) {
         if ($CurrentUsage -and $ContextSize -gt 0) {
             # PS 5.1 compatible null handling (no ?? operator)
             $InputTokens = if ($null -ne $CurrentUsage.input_tokens) { [int]$CurrentUsage.input_tokens } else { 0 }
+            $OutputTokens = if ($null -ne $CurrentUsage.output_tokens) { [int]$CurrentUsage.output_tokens } else { 0 }
             $CacheCreate = if ($null -ne $CurrentUsage.cache_creation_input_tokens) { [int]$CurrentUsage.cache_creation_input_tokens } else { 0 }
             $CacheRead = if ($null -ne $CurrentUsage.cache_read_input_tokens) { [int]$CurrentUsage.cache_read_input_tokens } else { 0 }
-            $CurrentTokens = $InputTokens + $CacheCreate + $CacheRead
+            $CurrentTokens = $InputTokens + $OutputTokens + $CacheCreate + $CacheRead
             $StdinContext = [math]::Floor($CurrentTokens * 100 / $ContextSize)
         }
     } catch {

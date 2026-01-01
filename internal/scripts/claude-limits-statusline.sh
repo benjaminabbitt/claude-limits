@@ -11,16 +11,19 @@ CURRENT_USAGE=$(echo "$INPUT" | jq -r '.context_window.current_usage // empty' 2
 # Calculate context utilization from stdin if available
 if [[ -n "$CURRENT_USAGE" && "$CURRENT_USAGE" != "null" ]]; then
     INPUT_TOKENS=$(echo "$INPUT" | jq -r '.context_window.current_usage.input_tokens // 0' 2>/dev/null)
+    OUTPUT_TOKENS=$(echo "$INPUT" | jq -r '.context_window.current_usage.output_tokens // 0' 2>/dev/null)
     CACHE_CREATE=$(echo "$INPUT" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0' 2>/dev/null)
     CACHE_READ=$(echo "$INPUT" | jq -r '.context_window.current_usage.cache_read_input_tokens // 0' 2>/dev/null)
     # Ensure numeric values (default to 0 if empty or non-numeric)
     INPUT_TOKENS=${INPUT_TOKENS:-0}
+    OUTPUT_TOKENS=${OUTPUT_TOKENS:-0}
     CACHE_CREATE=${CACHE_CREATE:-0}
     CACHE_READ=${CACHE_READ:-0}
     [[ "$INPUT_TOKENS" =~ ^[0-9]+$ ]] || INPUT_TOKENS=0
+    [[ "$OUTPUT_TOKENS" =~ ^[0-9]+$ ]] || OUTPUT_TOKENS=0
     [[ "$CACHE_CREATE" =~ ^[0-9]+$ ]] || CACHE_CREATE=0
     [[ "$CACHE_READ" =~ ^[0-9]+$ ]] || CACHE_READ=0
-    CURRENT_TOKENS=$((INPUT_TOKENS + CACHE_CREATE + CACHE_READ))
+    CURRENT_TOKENS=$((INPUT_TOKENS + OUTPUT_TOKENS + CACHE_CREATE + CACHE_READ))
     # Only calculate if CONTEXT_SIZE is a positive number
     if [[ "$CONTEXT_SIZE" =~ ^[0-9]+$ && "$CONTEXT_SIZE" -gt 0 ]]; then
         STDIN_CONTEXT=$((CURRENT_TOKENS * 100 / CONTEXT_SIZE))
