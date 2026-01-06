@@ -133,23 +133,23 @@ Install status line scripts for Claude Code:
 # List available scripts
 claude-limits install-script --list
 
-# Install bash script
+# Install bash script (also configures statusLine in ~/.claude/settings.json)
 claude-limits install-script bash ~/.local/bin/claude-limits-statusline.sh
 
 # Install PowerShell script
 claude-limits install-script powershell ~/bin/claude-limits-statusline.ps1
+
+# Configure in project settings instead of user settings
+claude-limits install-script --project bash .local/bin/claude-limits-statusline.sh
+
+# Overwrite existing statusLine configuration
+claude-limits install-script --force bash ~/.local/bin/claude-limits-statusline.sh
 ```
 
-Configure in `.claude/settings.json` (project) or `~/.claude/settings.json` (user):
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "~/.local/bin/claude-limits-statusline.sh"
-  }
-}
-```
+The `install-script` command automatically configures Claude Code's `statusLine` setting.
+By default it updates user settings (`~/.claude/settings.json`). Use `--project` to update
+project settings (`.claude/settings.json`) instead. If `statusLine` is already configured,
+use `--force` to overwrite.
 
 The status line shows: `5h: 45% @ 2:30 PM | wk: 23% @ Tue 8:00 AM | ctx: 67%`
 
@@ -195,7 +195,7 @@ $env:CLAUDE_LIMITS_DATETIME_FORMAT = "ddd h:mm tt"
 |---------|-------------|
 | `limits [query]` | Display usage (default command) |
 | `serve` | Start MCP server on stdio |
-| `install-script` | Install status line scripts |
+| `install-script` | Install status line scripts and configure Claude Code |
 
 ## Development
 
