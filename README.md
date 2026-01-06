@@ -112,7 +112,7 @@ The server exposes a `get_usage` tool that returns current usage data as JSON.
 
 #### Claude Code Configuration
 
-Add to your Claude Code MCP settings:
+Add to `.claude/settings.json` (project) or `~/.claude/settings.json` (user):
 
 ```json
 {
@@ -140,11 +140,14 @@ claude-limits install-script bash ~/.local/bin/claude-limits-statusline.sh
 claude-limits install-script powershell ~/bin/claude-limits-statusline.ps1
 ```
 
-Configure in Claude Code settings:
+Configure in `.claude/settings.json` (project) or `~/.claude/settings.json` (user):
 
 ```json
 {
-  "statusLineCommand": "~/.local/bin/claude-limits-statusline.sh"
+  "statusLine": {
+    "type": "command",
+    "command": "~/.local/bin/claude-limits-statusline.sh"
+  }
 }
 ```
 
