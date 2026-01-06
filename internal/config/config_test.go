@@ -33,9 +33,6 @@ func TestLoadValidConfig(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
 	content := `
-auth:
-  session_cookie: "test-cookie"
-  org_id: "test-org"
 formats:
   preset: "24hour"
 `
@@ -48,12 +45,6 @@ formats:
 		t.Fatalf("Load failed: %v", err)
 	}
 
-	if cfg.Auth.SessionCookie != "test-cookie" {
-		t.Errorf("Expected session_cookie 'test-cookie', got '%s'", cfg.Auth.SessionCookie)
-	}
-	if cfg.Auth.OrgID != "test-org" {
-		t.Errorf("Expected org_id 'test-org', got '%s'", cfg.Auth.OrgID)
-	}
 	if cfg.Formats.Preset != "24hour" {
 		t.Errorf("Expected preset '24hour', got '%s'", cfg.Formats.Preset)
 	}
@@ -150,8 +141,8 @@ func TestLoadFromEnvVar(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "config.yaml")
 
 	content := `
-auth:
-  session_cookie: "env-cookie"
+formats:
+  preset: "eu"
 `
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
@@ -166,7 +157,7 @@ auth:
 		t.Fatalf("Load failed: %v", err)
 	}
 
-	if cfg.Auth.SessionCookie != "env-cookie" {
-		t.Errorf("Expected session_cookie 'env-cookie', got '%s'", cfg.Auth.SessionCookie)
+	if cfg.Formats.Preset != "eu" {
+		t.Errorf("Expected preset 'eu', got '%s'", cfg.Formats.Preset)
 	}
 }

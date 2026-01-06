@@ -5,7 +5,7 @@ CLI tool to check your Claude.ai usage limits for Pro/Max subscriptions.
 ## Features
 
 - Check 5-hour and weekly usage limits from the terminal
-- Automatic authentication via browser cookies (Chrome, Firefox)
+- Automatic authentication using Claude Code OAuth credentials
 - MCP server mode for integration with Claude Code and other MCP clients
 - Status line scripts for real-time usage in Claude Code
 - Configurable date/time formats (12-hour, 24-hour, ISO 8601, etc.)
@@ -36,17 +36,30 @@ cd claude-limits
 just build
 ```
 
+## Prerequisites
+
+This tool requires Claude Code to be installed and authenticated. It reads OAuth credentials from `~/.claude/.credentials.json`, which is created when you authenticate with Claude Code.
+
+```bash
+# Install Claude Code if not already installed
+# See: https://docs.anthropic.com/en/docs/claude-code
+
+# Authenticate with Claude Code
+claude auth login
+```
+
 ## Usage
 
 ### Basic Usage
 
 ```bash
-# Show all usage data (auto-detects browser cookies)
+# Show all usage data
 claude-limits
 
 # Query specific field using fuzzy matching
 claude-limits five          # Returns 5-hour utilization
 claude-limits weekly        # Returns weekly utilization
+claude-limits fivehourutil  # Returns 5-hour utilization
 
 # Output as JSON
 claude-limits --format json
@@ -54,30 +67,15 @@ claude-limits --format json
 
 ### Authentication
 
-Authentication is resolved in this order:
+This tool uses OAuth credentials from Claude Code (`~/.claude/.credentials.json`). No manual configuration is required - just make sure you're logged into Claude Code.
 
-1. CLI flags: `--cookie` and `--org-id`
-2. Environment variables: `CLAUDE_SESSION_COOKIE` and `CLAUDE_ORG_ID`
-3. Configuration file
-4. Automatic extraction from browser cookies (Chrome, Firefox)
-
-For headless environments, set the environment variables or use a config file:
-
-```bash
-export CLAUDE_SESSION_COOKIE="your-session-cookie"
-export CLAUDE_ORG_ID="your-org-id"
-```
+The credentials include your subscription type (Pro/Max) and are automatically refreshed by Claude Code.
 
 ## Configuration
 
 Create a config file at `~/.config/claude-limits/config.yaml` (Linux/macOS) or `%APPDATA%\claude-limits\config.yaml` (Windows):
 
 ```yaml
-# Authentication credentials
-auth:
-  session_cookie: "your-session-cookie"
-  org_id: "your-org-id"
-
 # Display formats using Go time layout syntax
 # See: https://pkg.go.dev/time#pkg-constants
 formats:
@@ -183,8 +181,6 @@ $env:CLAUDE_LIMITS_DATETIME_FORMAT = "ddd h:mm tt"
 | Flag | Environment Variable | Description |
 |------|---------------------|-------------|
 | `--config` | `CLAUDE_LIMITS_CONFIG` | Config file path |
-| `--cookie` | `CLAUDE_SESSION_COOKIE` | Claude.ai session cookie |
-| `--org-id` | `CLAUDE_ORG_ID` | Claude.ai organization ID |
 | `--format` | - | Output format: `table` (default) or `json` |
 | `--cache` | - | Cache TTL in seconds (default: 30, 0 to disable) |
 | `--no-color` | - | Disable colored output |

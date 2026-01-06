@@ -7,18 +7,18 @@ import (
 
 // Sentinel errors for programmatic error handling
 var (
-	ErrAuthRequired     = errors.New("authentication required")
-	ErrCookieNotFound   = errors.New("session cookie not found")
-	ErrOrgIDNotFound    = errors.New("organization ID not found")
-	ErrCacheExpired     = errors.New("cache expired")
-	ErrNoMatch          = errors.New("no match found")
-	ErrRequestFailed    = errors.New("request failed")
-	ErrResponseParse    = errors.New("failed to parse response")
+	ErrAuthRequired      = errors.New("authentication required")
+	ErrCredentialsNotFound = errors.New("credentials not found")
+	ErrTokenExpired      = errors.New("access token expired")
+	ErrCacheExpired      = errors.New("cache expired")
+	ErrNoMatch           = errors.New("no match found")
+	ErrRequestFailed     = errors.New("request failed")
+	ErrResponseParse     = errors.New("failed to parse response")
 )
 
 // AuthError represents an authentication-related error
 type AuthError struct {
-	Source string // "flag", "env", "browser"
+	Source string // "credentials", "token"
 	Err    error
 }
 

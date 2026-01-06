@@ -1,22 +1,18 @@
 package cli
 
 import (
-	"os"
-
 	"github.com/benjaminabbitt/claude-limits/internal/config"
 	"github.com/benjaminabbitt/claude-limits/internal/version"
 	"github.com/spf13/cobra"
 )
 
 var (
-	sessionCookie string
-	orgID         string
-	outputFormat  string
-	verbose       bool
-	noColor       bool
-	cacheTTL      int
-	configPath    string
-	cfg           *config.Config
+	outputFormat string
+	verbose      bool
+	noColor      bool
+	cacheTTL     int
+	configPath   string
+	cfg          *config.Config
 )
 
 // RootCmd is the root command for the CLI
@@ -39,8 +35,6 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&configPath, "config", "", "Config file path (default: ~/.config/claude-limits/config.yaml)")
-	RootCmd.PersistentFlags().StringVar(&sessionCookie, "cookie", "", "Claude.ai session cookie (or set CLAUDE_SESSION_COOKIE)")
-	RootCmd.PersistentFlags().StringVar(&orgID, "org-id", "", "Claude.ai organization ID (or set CLAUDE_ORG_ID)")
 	RootCmd.PersistentFlags().StringVar(&outputFormat, "format", "table", "Output format: table or json")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	RootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
@@ -49,34 +43,6 @@ func init() {
 	RootCmd.AddCommand(limitsCmd)
 	RootCmd.AddCommand(serveCmd)
 	RootCmd.AddCommand(installScriptCmd)
-}
-
-// GetSessionCookie returns the session cookie from flag, env var, or config file
-func GetSessionCookie() string {
-	if sessionCookie != "" {
-		return sessionCookie
-	}
-	if envVal := os.Getenv("CLAUDE_SESSION_COOKIE"); envVal != "" {
-		return envVal
-	}
-	if cfg != nil && cfg.Auth.SessionCookie != "" {
-		return cfg.Auth.SessionCookie
-	}
-	return ""
-}
-
-// GetOrgID returns the org ID from flag, env var, or config file
-func GetOrgID() string {
-	if orgID != "" {
-		return orgID
-	}
-	if envVal := os.Getenv("CLAUDE_ORG_ID"); envVal != "" {
-		return envVal
-	}
-	if cfg != nil && cfg.Auth.OrgID != "" {
-		return cfg.Auth.OrgID
-	}
-	return ""
 }
 
 // GetOutputFormat returns the output format setting

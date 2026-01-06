@@ -13,7 +13,7 @@ import (
 
 // Serve starts the MCP server on stdio.
 // The mcp-go library handles SIGTERM/SIGINT for graceful shutdown.
-func Serve(sessionCookie, orgID string) error {
+func Serve(accessToken string) error {
 	s := server.NewMCPServer(
 		"claude-limits",
 		version.Version,
@@ -26,7 +26,7 @@ func Serve(sessionCookie, orgID string) error {
 	)
 
 	// Create API client
-	client := api.NewClient(sessionCookie, orgID)
+	client := api.NewClient(accessToken)
 
 	// Add the tool with its handler
 	s.AddTool(usageTool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

@@ -6,7 +6,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime"
 	"time"
@@ -16,8 +15,8 @@ import (
 	"github.com/benjaminabbitt/claude-limits/internal/version"
 )
 
-// DefaultBaseURL is the default Claude.ai API endpoint
-const DefaultBaseURL = "https://claude.ai"
+// DefaultBaseURL is the default Anthropic API endpoint
+const DefaultBaseURL = "https://api.anthropic.com"
 
 // Retry configuration
 const (
@@ -26,19 +25,17 @@ const (
 	maxBackoff     = 5 * time.Second
 )
 
-// userAgent returns a standards-compliant User-Agent string per RFC 7231
-// Format: ProductName/Version (OS; Arch) Go/Version
+// userAgent returns a User-Agent string matching Claude Code format
 func userAgent() string {
-	return fmt.Sprintf("claudelimits/%s (%s; %s) Go/%s",
+	return fmt.Sprintf("claude-code/%s (%s; %s) Go/%s",
 		version.Version, runtime.GOOS, runtime.GOARCH, runtime.Version()[2:])
 }
 
-// Client is the Claude.ai web API client
+// Client is the Anthropic OAuth API client
 type Client struct {
-	sessionCookie string
-	orgID         string
-	baseURL       string
-	httpClient    *http.Client
+	accessToken string
+	baseURL     string
+	httpClient  *http.Client
 }
 
 // ClientOption configures a Client
@@ -58,14 +55,13 @@ func WithHTTPClient(httpClient *http.Client) ClientOption {
 	}
 }
 
-// NewClient creates a new API client with the given session cookie and org ID.
+// NewClient creates a new API client with the given OAuth access token.
 // The base URL can be overridden via CLAUDE_API_BASE_URL environment variable
 // or WithBaseURL option.
-func NewClient(sessionCookie, orgID string, opts ...ClientOption) *Client {
+func NewClient(accessToken string, opts ...ClientOption) *Client {
 	c := &Client{
-		sessionCookie: sessionCookie,
-		orgID:         orgID,
-		baseURL:       DefaultBaseURL,
+		accessToken: accessToken,
+		baseURL:     DefaultBaseURL,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -106,9 +102,9 @@ func backoffDuration(attempt int) time.Duration {
 	return time.Duration(backoff)
 }
 
-// GetUsage fetches the current usage from Claude.ai with automatic retry
+// GetUsage fetches the current usage from Anthropic API with automatic retry
 func (c *Client) GetUsage() (*models.Usage, error) {
-	reqURL := fmt.Sprintf("%s/api/organizations/%s/usage", c.baseURL, url.PathEscape(c.orgID))
+	reqURL := fmt.Sprintf("%s/api/oauth/usage", c.baseURL)
 
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -137,11 +133,10 @@ func (c *Client) doRequest(reqURL string) (*models.Usage, error, bool) {
 	}
 
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", userAgent())
-	req.AddCookie(&http.Cookie{
-		Name:  "sessionKey",
-		Value: c.sessionCookie,
-	})
+	req.Header.Set("Authorization", "Bearer "+c.accessToken)
+	req.Header.Set("anthropic-beta", "oauth-2025-04-20")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -151,8 +146,18 @@ func (c *Client) doRequest(reqURL string) (*models.Usage, error, bool) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		retriable := isRetriable(resp.StatusCode)
-		return nil, apierrors.NewAPIError(resp.StatusCode, http.StatusText(resp.StatusCode), retriable), retriable
+		msg := http.StatusText(resp.StatusCode)
+		if len(body) > 0 {
+			var errResp struct {
+				Error string `json:"error"`
+			}
+			if json.Unmarshal(body, &errResp) == nil && errResp.Error != "" {
+				msg = errResp.Error
+			}
+		}
+		return nil, apierrors.NewAPIError(resp.StatusCode, msg, retriable), retriable
 	}
 
 	body, err := io.ReadAll(resp.Body)

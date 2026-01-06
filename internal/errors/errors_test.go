@@ -6,7 +6,7 @@ import (
 )
 
 func TestAuthError(t *testing.T) {
-	err := NewAuthError("browser", ErrCookieNotFound)
+	err := NewAuthError("credentials", ErrCredentialsNotFound)
 
 	// Test Error() method
 	msg := err.Error()
@@ -15,13 +15,13 @@ func TestAuthError(t *testing.T) {
 	}
 
 	// Test Unwrap
-	if !errors.Is(err, ErrCookieNotFound) {
-		t.Error("AuthError should unwrap to ErrCookieNotFound")
+	if !errors.Is(err, ErrCredentialsNotFound) {
+		t.Error("AuthError should unwrap to ErrCredentialsNotFound")
 	}
 
 	// Test source
-	if err.Source != "browser" {
-		t.Errorf("AuthError.Source = %q, want %q", err.Source, "browser")
+	if err.Source != "credentials" {
+		t.Errorf("AuthError.Source = %q, want %q", err.Source, "credentials")
 	}
 }
 
@@ -85,8 +85,8 @@ func TestSentinelErrors(t *testing.T) {
 	// Verify sentinel errors are distinct
 	sentinels := []error{
 		ErrAuthRequired,
-		ErrCookieNotFound,
-		ErrOrgIDNotFound,
+		ErrCredentialsNotFound,
+		ErrTokenExpired,
 		ErrCacheExpired,
 		ErrNoMatch,
 		ErrRequestFailed,
@@ -103,11 +103,11 @@ func TestSentinelErrors(t *testing.T) {
 }
 
 func TestIsAndAs(t *testing.T) {
-	err := NewAuthError("browser", ErrCookieNotFound)
+	err := NewAuthError("credentials", ErrCredentialsNotFound)
 
 	// Test Is wrapper
-	if !Is(err, ErrCookieNotFound) {
-		t.Error("Is should find wrapped ErrCookieNotFound")
+	if !Is(err, ErrCredentialsNotFound) {
+		t.Error("Is should find wrapped ErrCredentialsNotFound")
 	}
 
 	// Test As wrapper
@@ -115,7 +115,7 @@ func TestIsAndAs(t *testing.T) {
 	if !As(err, &authErr) {
 		t.Error("As should find AuthError")
 	}
-	if authErr.Source != "browser" {
-		t.Errorf("AuthError.Source = %q, want %q", authErr.Source, "browser")
+	if authErr.Source != "credentials" {
+		t.Errorf("AuthError.Source = %q, want %q", authErr.Source, "credentials")
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/benjaminabbitt/claude-limits/internal/api"
+	"github.com/benjaminabbitt/claude-limits/internal/auth"
 	"github.com/benjaminabbitt/claude-limits/internal/cache"
 	"github.com/benjaminabbitt/claude-limits/internal/format"
 	"github.com/benjaminabbitt/claude-limits/internal/fuzzy"
@@ -22,10 +23,8 @@ var limitsCmd = &cobra.Command{
 If a query is provided, fuzzy matches against field names and returns just the value.
 Example: claude-limits limits five  →  returns value for "Five Hour" field
 
-Authentication priority:
-1. --cookie and --org-id flags
-2. CLAUDE_SESSION_COOKIE and CLAUDE_ORG_ID environment variables
-3. Automatic extraction from browser cookies (Chrome, Firefox)`,
+Authentication uses OAuth credentials from Claude Code (~/.claude/.credentials.json).
+Make sure you have authenticated with Claude Code first.`,
 	RunE: runLimits,
 	Args: cobra.MaximumNArgs(1),
 }
@@ -62,12 +61,19 @@ func getUsageWithCache() (*models.Usage, error) {
 	}
 
 	// Fetch fresh data
-	cookie, orgID, err := ResolveAuth(IsVerbose())
+	creds, err := auth.Load("")
 	if err != nil {
 		return nil, err
 	}
 
-	client := api.NewClient(cookie, orgID)
+	if IsVerbose() {
+		fmt.Fprintf(os.Stderr, "Using Claude Code credentials (subscription: %s)\n", creds.SubscriptionType)
+		if creds.IsExpired() {
+			fmt.Fprintln(os.Stderr, "Warning: access token may be expired")
+		}
+	}
+
+	client := api.NewClient(creds.AccessToken)
 	usage, err := client.GetUsage()
 	if err != nil {
 		return nil, err
@@ -81,45 +87,6 @@ func getUsageWithCache() (*models.Usage, error) {
 	}
 
 	return usage, nil
-}
-
-// ResolveAuth resolves authentication credentials from flags, env vars, or browser.
-// If verbose is true, status messages are printed to stderr.
-func ResolveAuth(verbose bool) (cookie, orgID string, err error) {
-	cookie = GetSessionCookie()
-	orgID = GetOrgID()
-
-	if cookie != "" && orgID != "" {
-		return cookie, orgID, nil
-	}
-
-	if cookie == "" {
-		if verbose {
-			fmt.Fprintln(os.Stderr, "No session cookie provided, trying browser extraction...")
-		}
-		cookie, err = api.GetSessionCookieFromBrowser()
-		if err != nil {
-			return "", "", fmt.Errorf("session cookie required: set --cookie flag, CLAUDE_SESSION_COOKIE env var, or log into claude.ai in your browser\n  browser error: %w", err)
-		}
-		if verbose {
-			fmt.Fprintln(os.Stderr, "Found session cookie in browser")
-		}
-	}
-
-	if orgID == "" {
-		if verbose {
-			fmt.Fprintln(os.Stderr, "No org ID provided, trying browser extraction...")
-		}
-		orgID, err = api.GetOrgIDFromBrowser()
-		if err != nil {
-			return "", "", fmt.Errorf("org ID required: set --org-id flag or CLAUDE_ORG_ID env var\n  browser error: %w", err)
-		}
-		if verbose {
-			fmt.Fprintln(os.Stderr, "Found org ID in browser")
-		}
-	}
-
-	return cookie, orgID, nil
 }
 
 func printMatchedValue(usage *models.Usage, query string) error {

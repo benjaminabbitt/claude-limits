@@ -52,12 +52,6 @@ var Presets = map[string]FormatPreset{
 	},
 }
 
-// Auth contains authentication configuration
-type Auth struct {
-	SessionCookie string `yaml:"session_cookie"`
-	OrgID         string `yaml:"org_id"`
-}
-
 // Formats contains display format configuration
 type Formats struct {
 	Preset   string `yaml:"preset"`
@@ -68,7 +62,6 @@ type Formats struct {
 
 // Config represents the full configuration file
 type Config struct {
-	Auth    Auth    `yaml:"auth"`
 	Formats Formats `yaml:"formats"`
 }
 
